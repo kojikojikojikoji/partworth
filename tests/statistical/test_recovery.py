@@ -63,3 +63,17 @@ def test_s05_convergence(fitted):
     d = res.diagnostics()
     assert d.divergences == 0
     assert d.rhat_max < 1.02, d.report()
+
+
+def test_s05b_low_heterogeneity_converges():
+    """Little heterogeneity (small tau) used to leave chains disagreeing with short tuning."""
+    data, truth = simulate_cbc(
+        60, 10, 3, {"brand": ["x", "y", "z"], "price": [1, 2, 3]},
+        price="price", mu=[0.3, -0.2, 0.0, -0.5], sd=[0.06, 0.03, 0.2, 0.2], seed=5)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", pw.ConvergenceWarning)
+        res = pw.HierarchicalMNL(data, priors=pw.Priors(mu_sd=1.0, tau_sd=0.5)).fit(
+            chains=4, random_seed=5)
+    d = res.diagnostics()
+    assert d.divergences == 0
+    assert d.rhat_max < 1.02, d.report()

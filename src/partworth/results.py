@@ -28,18 +28,33 @@ ESS_MIN = 400
 
 @dataclass(frozen=True)
 class Diagnostics:
-    """Convergence summary over the population parameters and respondent betas."""
+    """Convergence summary.
+
+    ``rhat_max``, ``ess_bulk_min`` and ``ess_tail_min`` cover the parameters that
+    part-worths, shares and WTP depend on: population means (Delta), between-respondent
+    SDs (tau) and respondent coefficients (beta). Correlations mix more slowly and are
+    reported separately in ``corr_rhat_max`` / ``corr_ess_bulk_min``; they only need to
+    meet the targets if you report correlations.
+    """
 
     rhat_max: float
     ess_bulk_min: float
     ess_tail_min: float
     divergences: int
     worst: str
+    corr_rhat_max: float = float("nan")
+    corr_ess_bulk_min: float = float("nan")
 
     @property
     def ok(self) -> bool:
         return (self.rhat_max < RHAT_MAX and self.ess_bulk_min > ESS_MIN
                 and self.divergences == 0)
+
+    @property
+    def corr_ok(self) -> bool:
+        if np.isnan(self.corr_rhat_max):
+            return True
+        return self.corr_rhat_max < RHAT_MAX and self.corr_ess_bulk_min > ESS_MIN
 
     def report(self) -> str:
         lines = [
@@ -49,8 +64,10 @@ class Diagnostics:
             f"divergences    {self.divergences}  (target 0)",
             f"worst variable {self.worst}",
         ]
-        if self.ok:
-            return "\n".join(["converged", *lines])
+        if not np.isnan(self.corr_rhat_max):
+            lines.append(f"correlations   R-hat max {self.corr_rhat_max:.3f}, "
+                         f"ESS bulk min {self.corr_ess_bulk_min:.0f}")
+        head = "converged" if self.ok else "NOT converged"
         hints = []
         if self.divergences:
             hints.append("- divergences: raise target_accept (0.95-0.99) or tighten tau_sd")
@@ -58,7 +75,14 @@ class Diagnostics:
             hints.append("- low ESS / high R-hat: run more draws and tune steps; check that "
                          "every level was shown often enough (ChoiceData.describe())")
             hints.append("- many sparse levels: try covariance='diagonal' first")
-        return "\n".join(["NOT converged", *lines, "what to try:", *hints])
+        if not self.corr_ok:
+            hints.append("- correlations have not reached the targets: part-worths, shares "
+                         "and WTP are unaffected, but rerun with more draws (e.g. 3000) "
+                         "before reporting correlations")
+        out = [head, *lines]
+        if hints:
+            out += ["what to try:", *hints]
+        return "\n".join(out)
 
 
 class HBResult:
@@ -184,31 +208,36 @@ class HBResult:
     # ------------------------------------------------------------------ diagnostics
     def diagnostics(self) -> Diagnostics:
         post = self.idata["posterior"]
-        names = [v for v in ("Delta", "tau", "corr", "beta") if v in post.data_vars]
+        core = [v for v in ("Delta", "tau", "beta") if v in post.data_vars]
+        names = core + (["corr"] if "corr" in post.data_vars else [])
         rhat = az.rhat(self.idata, var_names=names)
         ess_b = az.ess(self.idata, var_names=names, method="bulk")
         ess_t = az.ess(self.idata, var_names=names, method="tail")
 
-        def extreme(ds, fn):
-            vals = {}
-            for v in names:
-                arr = ds[v].to_numpy().astype(float)
-                if v == "corr":  # the diagonal is constant 1
-                    arr = arr[~np.eye(arr.shape[0], dtype=bool)]
-                arr = arr[np.isfinite(arr)]
-                if arr.size:
-                    vals[v] = fn(arr)
-            return vals
+        def values(ds, v):
+            arr = ds[v].to_numpy().astype(float)
+            if v == "corr":  # the diagonal is constant 1
+                arr = arr[~np.eye(arr.shape[0], dtype=bool)]
+            return arr[np.isfinite(arr)]
 
-        r = extreme(rhat, np.max)
-        eb, et = extreme(ess_b, np.min), extreme(ess_t, np.min)
+        def extreme(ds, fn, variables):
+            out = {v: fn(a) for v in variables if (a := values(ds, v)).size}
+            return out
+
+        r, eb, et = (extreme(rhat, np.max, core), extreme(ess_b, np.min, core),
+                     extreme(ess_t, np.min, core))
+        nan = float("nan")
+        corr_r = extreme(rhat, np.max, ["corr"]) if "corr" in names else {}
+        corr_e = extreme(ess_b, np.min, ["corr"]) if "corr" in names else {}
         div = self.idata["sample_stats"]["diverging"]
         return Diagnostics(  # nan when not computable (e.g. a single chain)
-            rhat_max=float(max(r.values())) if r else float("nan"),
-            ess_bulk_min=float(min(eb.values())) if eb else float("nan"),
-            ess_tail_min=float(min(et.values())) if et else float("nan"),
+            rhat_max=float(max(r.values())) if r else nan,
+            ess_bulk_min=float(min(eb.values())) if eb else nan,
+            ess_tail_min=float(min(et.values())) if et else nan,
             divergences=int(div.sum()),
             worst=max(r, key=r.get) if r else "",
+            corr_rhat_max=float(corr_r["corr"]) if corr_r else nan,
+            corr_ess_bulk_min=float(corr_e["corr"]) if corr_e else nan,
         )
 
     def _warn_if_not_converged(self) -> None:

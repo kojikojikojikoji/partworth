@@ -68,7 +68,7 @@ between-respondent SDs HalfNormal(1), LKJ(2) on correlations, full covariance.
 ## 4. Estimation and convergence
 
 ```python
-result = pw.HierarchicalMNL(data, covariates=True).fit(draws=1000, tune=1000, chains=4)
+result = pw.HierarchicalMNL(data, covariates=True).fit(draws=1000, tune=2000, chains=4)
 print(result.diagnostics().report())
 ```
 
@@ -81,7 +81,7 @@ lists what to try. In order:
    the slowest parameters; respondent-level part-worths converge first.
 3. **Sparse levels:** merge levels that were rarely shown or chosen, or drop them.
 
-The default run (4 x 1000 draws) can leave correlation parameters slightly below the
+The default run (4 chains x 1000 draws after 2000 tuning steps) can leave correlation parameters slightly below the
 ESS target, as in the camera validation. Part-worths, shares and WTP are then still
 reliable; rerun with more draws before reporting correlations.
 

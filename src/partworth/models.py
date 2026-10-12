@@ -143,7 +143,7 @@ class HierarchicalMNL:
         self,
         *,
         draws: int = 1000,
-        tune: int = 1000,
+        tune: int = 2000,
         chains: int = 4,
         sampler: Literal["nutpie", "pymc"] = "nutpie",
         target_accept: float = 0.9,
@@ -151,7 +151,11 @@ class HierarchicalMNL:
         progressbar: bool = False,
         **kwargs,
     ) -> HBResult:
-        """Draw from the posterior and return an :class:`~partworth.HBResult`."""
+        """Draw from the posterior and return an :class:`~partworth.HBResult`.
+
+        The default of 2000 tuning steps is deliberate: with little heterogeneity between
+        respondents (small ``tau``), 500-1000 steps can leave chains disagreeing.
+        """
         from .results import HBResult
 
         model = self.build()

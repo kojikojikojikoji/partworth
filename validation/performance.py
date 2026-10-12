@@ -26,7 +26,7 @@ def main() -> None:
         t0 = time.time()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            res = pw.HierarchicalMNL(data).fit(draws=1000, tune=1000, chains=4, random_seed=1)
+            res = pw.HierarchicalMNL(data).fit(draws=1000, tune=2000, chains=4, random_seed=1)
         secs = time.time() - t0
         d = res.diagnostics()
         peak_gb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e9  # bytes on macOS
@@ -39,7 +39,7 @@ def main() -> None:
         "",
         f"Run {dt.date.today().isoformat()}, partworth {pw.__version__}, "
         f"{platform.platform()}, {platform.processor() or platform.machine()}. "
-        "4 chains x 1000 draws after 1000 tuning steps, nutpie, full covariance. "
+        "4 chains x 1000 draws after 2000 tuning steps, nutpie, full covariance. "
         "Peak memory is the process maximum so far (cumulative across rows).",
         "",
         "| respondents | tasks | alternatives | coefficients | seconds | peak memory (GB) "

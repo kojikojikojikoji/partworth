@@ -13,7 +13,7 @@ data = load_camera()          # downloaded from CRAN on first use
 print(data)
 print(data.describe())
 
-result = pw.HierarchicalMNL(data).fit(draws=1000, tune=1000, chains=4, random_seed=1)
+result = pw.HierarchicalMNL(data).fit(draws=1000, tune=2000, chains=4, random_seed=1)
 print(result.diagnostics().report())
 print(result.population().round(3))
 print(result.importances().mean().round(1))

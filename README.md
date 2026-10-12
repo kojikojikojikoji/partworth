@@ -43,7 +43,7 @@ data = pw.ChoiceData.from_long(
 )
 data.describe()                                # level counts and choice rates
 
-result = pw.HierarchicalMNL(data).fit(draws=1000, tune=1000, chains=4, random_seed=1)
+result = pw.HierarchicalMNL(data).fit(draws=1000, tune=2000, chains=4, random_seed=1)
 print(result.diagnostics().report())          # R-hat, ESS, divergences, what to try
 
 result.part_worths()                           # raw utilities, one column per level
@@ -63,9 +63,10 @@ A runnable example on public data is in `examples/camera.py`.
 
 ## Validation
 
-- Parameter recovery on simulated data (`tests/statistical`, run with `--run-slow`):
-  population means and SDs inside 90% intervals, respondent-level 90% intervals cover the
-  true values 85-95% of the time, no divergences.
+- Parameter recovery on simulated data (`validation/recovery.py`, report in
+  `validation/results/recovery_report.md`; the same checks run as tests with
+  `--run-slow`): respondent-level 90% intervals covered 88.7% of the true values
+  (300 respondents x 12 tasks), no divergences.
 - Comparison with R `bayesm::rhierMnlRwMixture` on the camera data
   (`validation/compare_camera.py`, report in `validation/results/camera_report.md`).
   With default priors (2026-10-12): respondent-level posterior means correlate at
