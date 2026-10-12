@@ -27,18 +27,57 @@ latent class, MaxDiff, ACBC.
 ## Quick look
 
 ```python
+import pandas as pd
 import partworth as pw
 
+# one row per respondent x task x alternative
 data = pw.ChoiceData.from_long(
     df,
     attributes={
         "brand": pw.Categorical(["A", "B", "C"]),
-        "price": pw.Linear(sign="negative"),
+        "size": pw.Categorical(["S", "M", "L"]),
+        "price": pw.Linear(sign="negative"),   # lognormal: negative for everyone
     },
-    none="is_none",
+    none="is_none",                            # optional "no purchase" alternative
+    covariates=respondents,                    # optional, one row per respondent
 )
-data.describe()
+data.describe()                                # level counts and choice rates
+
+result = pw.HierarchicalMNL(data).fit(draws=1000, tune=1000, chains=4, random_seed=1)
+print(result.diagnostics().report())          # R-hat, ESS, divergences, what to try
+
+result.part_worths()                           # raw utilities, one column per level
+result.part_worths("zc_diffs")                 # zero-centred diffs
+result.importances()
+result.to_sawtooth_csv("utilities.csv")
+
+sim = pw.MarketSimulator(result)
+scenario = pd.DataFrame({"product": ["Ours", "Theirs"], "brand": ["A", "B"],
+                         "size": ["M", "M"], "price": [3.0, 2.5]})
+sim.shares(scenario)                           # shares with 90% credible intervals
+sim.price_curve(scenario, product="Ours", grid=[2.0, 2.5, 3.0, 3.5])
+pw.wtp(result, attribute="size", from_level="S", to_level="L")
 ```
+
+A runnable example on public data is in `examples/camera.py`.
+
+## Validation
+
+- Parameter recovery on simulated data (`tests/statistical`, run with `--run-slow`):
+  population means and SDs inside 90% intervals, respondent-level 90% intervals cover the
+  true values 85-95% of the time, no divergences.
+- Comparison with R `bayesm::rhierMnlRwMixture` on the camera data
+  (`validation/compare_camera.py`); the latest report is in `validation/results/`.
+
+## Installation
+
+```
+pip install "partworth[nutpie,datasets]"
+```
+
+Requires Python 3.12+. On macOS 26 or later with PyTensor 3.3.3 or earlier, set
+`PYTENSOR_FLAGS=cxx=` if you see `ld: library 'd64' not found` (fixed upstream in
+pymc-devs/pytensor#2432, not yet released).
 
 ## Data and licences
 

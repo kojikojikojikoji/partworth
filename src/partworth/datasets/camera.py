@@ -94,16 +94,18 @@ def load_camera_long(cache_dir: str | os.PathLike | None = None) -> pd.DataFrame
     return pd.concat(frames, ignore_index=True)
 
 
-def load_camera(cache_dir: str | os.PathLike | None = None) -> ChoiceData:
+def load_camera(cache_dir: str | os.PathLike | None = None, *,
+                price_sign: str | None = "negative") -> ChoiceData:
     """camera as :class:`~partworth.ChoiceData`.
 
     Coding follows bayesm so results can be compared: features are dummy coded against
     ``"no"``, brand is dummy coded against the outside option (through ``NONE``) with
     canon as reference, and price (hundreds of US dollars) enters linearly with a
-    negative sign constraint and no centring or scaling.
+    negative sign constraint and no centring or scaling. Pass ``price_sign=None`` for
+    an unconstrained normal price coefficient, as in bayesm.
     """
     long = load_camera_long(cache_dir)
     attributes = {"brand": Categorical(BRANDS, coding="dummy", reference="canon")}
     attributes |= {f: Categorical(("no", "yes"), coding="dummy") for f in FEATURES}
-    attributes["price"] = Linear(center=0.0, scale=1.0, sign="negative")
+    attributes["price"] = Linear(center=0.0, scale=1.0, sign=price_sign)
     return ChoiceData.from_long(long, attributes=attributes, none="none")
