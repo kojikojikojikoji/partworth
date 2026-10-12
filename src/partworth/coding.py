@@ -40,7 +40,7 @@ class Categorical:
     reference: str | None = None
 
     def __post_init__(self) -> None:
-        levels = tuple(str(v) for v in self.levels)
+        levels = tuple(level_label(v) for v in self.levels)
         if len(levels) < 2:
             raise SchemaError("a Categorical attribute needs at least two levels")
         if len(set(levels)) != len(levels):
@@ -202,6 +202,19 @@ class Codebook:
         return f"Codebook(columns={list(self.columns)})"
 
 
+def level_label(value) -> str | None:
+    """Label used to match a cell against declared levels.
+
+    Integral floats (``1.0``) match ``"1"``: a column of integer levels becomes float as
+    soon as a none row adds a missing value.
+    """
+    if value is None or (not isinstance(value, str) and pd.isna(value)):
+        return None
+    if isinstance(value, float | np.floating) and float(value).is_integer():
+        return str(int(value))
+    return str(value)
+
+
 def _kept_levels(spec: Categorical) -> tuple[str, ...]:
     if spec.coding == "effects":
         return tuple(spec.levels[:-1])
@@ -212,7 +225,7 @@ def _kept_levels(spec: Categorical) -> tuple[str, ...]:
 def _encode_categorical(f: _Fitted, col: pd.Series, is_none: np.ndarray) -> np.ndarray:
     spec = f.spec
     assert isinstance(spec, Categorical)
-    values = np.array([None if pd.isna(v) else str(v) for v in col], dtype=object)
+    values = np.array([level_label(v) for v in col], dtype=object)
     known = set(spec.levels)
     for i, v in enumerate(values):
         if not is_none[i] and v not in known:

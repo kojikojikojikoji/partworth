@@ -51,7 +51,7 @@ def read_utilities(path: str | os.PathLike) -> pd.DataFrame:
     The respondent id becomes the index. ``RLH`` (if present) is returned divided by
     1000 in the column ``("RLH", "RLH")``.
     """
-    raw = pd.read_csv(path)
+    raw = pd.read_csv(path, dtype={RESPONDENT: str})
     if RESPONDENT not in raw.columns:
         raise SchemaError(f"no {RESPONDENT!r} column in {path}")
     raw = raw.set_index(RESPONDENT)

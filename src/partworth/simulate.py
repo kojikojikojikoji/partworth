@@ -41,8 +41,8 @@ class MarketSimulator:
         self.rule = rule
         self.exponent = exponent
         draws = result.beta_draws()
-        step = max(1, draws.shape[0] // max_draws)
-        self._beta = draws[::step]                     # (S, N, K)
+        idx = np.linspace(0, draws.shape[0] - 1, min(draws.shape[0], max_draws)).astype(int)
+        self._beta = draws[idx]                        # (S, N, K)
 
     def _design(self, scenario: pd.DataFrame, include_none: bool) -> tuple[np.ndarray, list]:
         cb = self.result.data.codebook
@@ -103,7 +103,7 @@ class MarketSimulator:
         if not isinstance(self.result.data.codebook.spec(attribute), Linear):
             raise SchemaError(f"{attribute!r} is not a Linear attribute")
         scenario = scenario.reset_index(drop=True)
-        pos = (product if isinstance(product, int)
+        pos = (int(product) if isinstance(product, int | np.integer)
                else int(np.flatnonzero(scenario["product"].to_numpy() == product)[0]))
         rows = []
         for value in grid:

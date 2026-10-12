@@ -45,6 +45,7 @@ def to_bayesm_space(beta: np.ndarray, names: list[str]) -> pd.DataFrame:
 
 def hit_rate(beta: np.ndarray, data: pw.ChoiceData) -> float:
     util = np.einsum("ntjk,nk->ntj", data.X, beta)
+    util = np.where(data.mask, util, -np.inf)
     ii, tt = np.nonzero(data.task_mask)
     return float((util[ii, tt].argmax(axis=1) == data.y[ii, tt]).mean())
 
@@ -73,7 +74,8 @@ def main() -> None:
     results = {}
     settings = {
         "default priors": pw.Priors(),
-        "bayesm-like priors": pw.Priors(mu_sd=10.0, tau_sd=2.0, lkj_eta=1.0),
+        "wide priors (mu_sd=10, tau_sd=2, lkj_eta=1)": pw.Priors(mu_sd=10.0, tau_sd=2.0,
+                                                                lkj_eta=1.0),
     }
     for label, priors in settings.items():
         t0 = time.time()
@@ -108,7 +110,8 @@ def main() -> None:
             "seconds": elapsed,
             "diag": d,
         }
-        table.to_csv(out / f"camera_{label.replace(' ', '_')}.csv")
+        slug = label.split(" (")[0].replace(" ", "_")
+        table.to_csv(out / f"camera_{slug}.csv")
 
     write_report(out / "camera_report.md", results, t_bayesm, args)
 
@@ -125,7 +128,9 @@ def write_report(path: Path, results: dict, t_bayesm: float, args) -> None:
         "",
         "The algorithms differ (bayesm: random-walk Metropolis within Gibbs, inverse-Wishart "
         "prior on the covariance; partworth: NUTS, LKJ prior). Agreement is a check that "
-        "the model is implemented correctly, not a claim that the two are identical.",
+        "the model is implemented correctly, not a claim that the two are identical. "
+        "The second setting widens partworth's priors; it does not reproduce bayesm's "
+        "inverse-Wishart prior, so larger differences there show prior sensitivity.",
         "",
     ]
     for label, r in results.items():
@@ -134,7 +139,7 @@ def write_report(path: Path, results: dict, t_bayesm: float, args) -> None:
             f"## {label}",
             "",
             f"- max |difference in population means| / bayesm posterior sd: "
-            f"{t['diff_in_sd'].abs().max():.2f} (target 0.1 is aspirational; see text)",
+            f"{t['diff_in_sd'].abs().max():.2f} (target 0.1; reported, not enforced: the priors differ)",
             f"- min correlation of respondent posterior means: "
             f"{t['respondent_corr'].min():.3f} (target 0.9)",
             f"- hold-out hit rate: partworth {r['hit_partworth']:.3f}, "

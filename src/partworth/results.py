@@ -19,7 +19,7 @@ import pandas as pd
 
 from .coding import NONE_COLUMN, Categorical, Linear
 from .data import ChoiceData
-from .errors import ConvergenceWarning
+from .errors import ConvergenceWarning, SchemaError
 
 RHAT_MAX = 1.01
 _PAD = -1e9  # utility for alternatives that were not shown
@@ -106,7 +106,10 @@ class HBResult:
         """Root likelihood per respondent (posterior-mean betas, estimation tasks)."""
         p = self._chosen_prob(self.beta_mean())
         logp = np.where(self.data.task_mask, np.log(p), 0.0)
-        out = np.exp(logp.sum(axis=1) / self.data.task_mask.sum(axis=1))
+        n_tasks = self.data.task_mask.sum(axis=1)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            # NaN for respondents with no estimation task (all tasks held out)
+            out = np.where(n_tasks > 0, np.exp(logp.sum(axis=1) / n_tasks), np.nan)
         return pd.Series(out, index=self.data.respondents, name="RLH")
 
     def population(self) -> pd.DataFrame:
@@ -157,7 +160,14 @@ class HBResult:
         Pass the hold-out half of :meth:`ChoiceData.holdout` to score hold-out tasks.
         """
         data = self.data if data is None else data
-        beta = self.beta_mean()
+        if tuple(data.coef_names) != tuple(self.data.coef_names):
+            raise SchemaError("data was coded differently from the estimation data; "
+                              "build it with codebook=result.data.codebook")
+        pos = self.data.respondents.get_indexer(data.respondents)
+        if (pos < 0).any():
+            raise SchemaError("data contains respondents that were not in the estimation "
+                              f"data: {list(data.respondents[pos < 0][:5])}")
+        beta = self.beta_mean()[pos]
         util = np.einsum("ntjk,nk->ntj", data.X, beta)
         util = np.where(data.mask, util, _PAD)
         prob = np.exp(util - util.max(axis=2, keepdims=True))

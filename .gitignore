@@ -12,3 +12,6 @@ htmlcov/
 data/
 *.rda
 *.RData
+
+# bayesm outputs at respondent level are derived from GPL-distributed data
+validation/results/bayesm_*.csv

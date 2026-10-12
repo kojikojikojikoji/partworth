@@ -67,7 +67,10 @@ A runnable example on public data is in `examples/camera.py`.
   population means and SDs inside 90% intervals, respondent-level 90% intervals cover the
   true values 85-95% of the time, no divergences.
 - Comparison with R `bayesm::rhierMnlRwMixture` on the camera data
-  (`validation/compare_camera.py`); the latest report is in `validation/results/`.
+  (`validation/compare_camera.py`, report in `validation/results/camera_report.md`).
+  With default priors (2026-10-12): respondent-level posterior means correlate at
+  0.997 or more for every coefficient, population means differ by at most 0.15 posterior
+  SDs, and hold-out hit rates are 0.726 (partworth) vs 0.730 (bayesm).
 
 ## Installation
 

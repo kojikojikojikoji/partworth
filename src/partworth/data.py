@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
 import numpy as np
 import pandas as pd
 
-from .coding import AttributeSpec, Categorical, Codebook
+from .coding import AttributeSpec, Categorical, Codebook, level_label
 from .errors import ChoiceError, SchemaError
 
 
@@ -86,11 +87,14 @@ class ChoiceData:
         work = df[required].copy()
         if work[[respondent, task, alternative, chosen]].isna().any().any():
             raise SchemaError("respondent, task, alternative and chosen must not be missing")
-        is_none = (
-            pd.Series(False, index=work.index)
-            if none is None
-            else work[none].astype(bool)
-        )
+        if none is None:
+            is_none = pd.Series(False, index=work.index)
+        else:
+            flag = work[none]
+            if flag.isna().any() or not flag.isin([0, 1, True, False]).all():
+                raise SchemaError(f"{none!r} must contain only True/False (or 1/0), "
+                                  "with no missing values")
+            is_none = flag.astype(bool)
         ch = pd.to_numeric(work[chosen], errors="coerce")
         if ch.isna().any() or not ch.isin([0, 1]).all():
             raise SchemaError(f"{chosen!r} must contain only 0 and 1")
@@ -173,6 +177,8 @@ class ChoiceData:
     # ------------------------------------------------------------------ subsetting
     def subset(self, respondents: Sequence) -> ChoiceData:
         """Keep the given respondents, in the given order."""
+        if pd.Index(respondents).has_duplicates:
+            raise SchemaError("respondents passed to subset() must be unique")
         idx = self.respondents.get_indexer(pd.Index(respondents))
         if (idx < 0).any():
             raise KeyError(f"unknown respondents: {list(pd.Index(respondents)[idx < 0])}")
@@ -193,6 +199,11 @@ class ChoiceData:
             raise KeyError(f"none of the tasks {list(tasks)} were found")
         is_out[sel["i"].to_numpy(), sel["t"].to_numpy()] = True
         out_long = self.long["task"].isin(list(tasks))
+        empty = ~(self.task_mask & ~is_out).any(axis=1)
+        if empty.any():
+            warnings.warn(f"{int(empty.sum())} respondent(s) have no estimation task left "
+                          "after holdout(); their part-worths come from the prior only",
+                          stacklevel=2)
         train = replace(self, task_mask=self.task_mask & ~is_out,
                         long=self.long[~out_long].reset_index(drop=True))
         test = replace(self, task_mask=self.task_mask & is_out,
@@ -207,7 +218,7 @@ class ChoiceData:
         for name in self.codebook.attributes:
             spec = self.codebook.spec(name)
             if isinstance(spec, Categorical):
-                g = inside.groupby(inside[name].astype(str))["chosen"]
+                g = inside.groupby(inside[name].map(level_label))["chosen"]
                 stats = pd.DataFrame({"shown": g.size(), "chosen": g.sum()})
                 stats = stats.reindex(list(spec.levels), fill_value=0)
             else:
