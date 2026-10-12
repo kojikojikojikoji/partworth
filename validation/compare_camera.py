@@ -139,7 +139,8 @@ def write_report(path: Path, results: dict, t_bayesm: float, args) -> None:
             f"## {label}",
             "",
             f"- max |difference in population means| / bayesm posterior sd: "
-            f"{t['diff_in_sd'].abs().max():.2f} (target 0.1; reported, not enforced: the priors differ)",
+            f"{t['diff_in_sd'].abs().max():.2f} "
+            "(target 0.1; reported, not enforced: the priors differ)",
             f"- min correlation of respondent posterior means: "
             f"{t['respondent_corr'].min():.3f} (target 0.9)",
             f"- hold-out hit rate: partworth {r['hit_partworth']:.3f}, "
