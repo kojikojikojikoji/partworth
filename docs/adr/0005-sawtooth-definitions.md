@@ -9,8 +9,10 @@
   zero-centred diffs are normalised so that, per respondent, utilities sum to zero within
   each attribute and the best-minus-worst differences average 100 across attributes.
   https://legacy.sawtoothsoftware.com/help/lighthouse-studio/manual/analysis_manager_export_settings_conjoint.html
+  (retrieved 2026-10-12; the legacy site can be slow or offline)
 - Sawtooth Software, Discover help, "CBC utilities": raw utilities are the ones to use in
   market simulators. https://sawtoothsoftware.com/help/discover/analysis/cbc/cbc-utilities
+  (retrieved 2026-10-12)
 
 ## Decision
 

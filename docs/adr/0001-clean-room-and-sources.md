@@ -5,21 +5,20 @@
 
 ## Context
 
-The author has worked on conjoint analysis for clients. partworth must not contain any
-client code, data, attribute sets, deliverables or project names. It must also stay
-compatible with Apache-2.0, so GPL code (R `bayesm`, `apollo`) cannot be ported.
+partworth must contain only public or simulated material. It must not contain code,
+data, attribute sets or results from non-public studies. It must also stay compatible
+with Apache-2.0, so GPL code (R `bayesm`, `apollo`) cannot be ported.
 
 ## Decision
 
-1. partworth is developed in its own directory, outside any client workspace. The
-   project's local settings file denies the AI coding assistant read access to the
-   author's private, client-derived conjoint notes and skills, so they cannot leak into
-   the code.
+1. partworth is developed in its own directory, away from other work. A local settings
+   file, which is not committed, stops the AI coding assistant from reading the author's
+   private notes on conjoint analysis.
 2. Only the public sources listed below are used. Anything else must be added to this
    list in the same pull request that relies on it.
-3. GPL software is used only as an external program for validation (R is called in a
-   separate process from `validation/`). Its data is downloaded by the user at run time
-   and is never committed or distributed.
+3. GPL software is used only as an external program for validation. R runs in a
+   separate process from `validation/`. Its data is downloaded at run time. It is never
+   committed or distributed.
 4. Examples and tests use only public data (`bayesm::camera`) and simulated data.
 
 ## Public sources
@@ -39,7 +38,7 @@ Models and definitions
 Software documentation (APIs only; no code copied)
 - PyMC, nutpie, ArviZ, pandas, xarray documentation.
 - pymc-marketing `customer_choice` module and issues #2627, PRs #2490 and #2514
-  (Apache-2.0) — read for interoperability; see ADR-0002.
+  (Apache-2.0), read for interoperability. See ADR-0002.
 - bayesm reference manual, `rhierMnlRwMixture` and `camera` help pages (documentation
   only; the GPL source is not read for porting).
 - ChoiceDesign documentation (for the design import in a later release).

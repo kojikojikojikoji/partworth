@@ -65,12 +65,20 @@ def main() -> None:
             f"| {name} | {MU[k]:.2f} | [{mlo:.2f}, {mhi:.2f}] | {mlo <= MU[k] <= mhi} "
             f"| {sd_true[k]:.2f} | [{slo:.2f}, {shi:.2f}] | {slo <= sd_true[k] <= shi} "
             f"| {corr[k]:.3f} | {ind_cov[:, k].mean():.3f} |")
+    mean_cov = sum(np.quantile(delta.to_numpy()[:, k], 0.05) <= MU[k]
+                   <= np.quantile(delta.to_numpy()[:, k], 0.95) for k in range(len(names)))
+    sd_cov = sum(np.quantile(tau.to_numpy()[:, k], 0.05) <= sd_true[k]
+                 <= np.quantile(tau.to_numpy()[:, k], 0.95) for k in range(len(names)))
     lines += [
         "",
+        f"Population means inside their 90% interval: {mean_cov} of {len(names)}; "
+        f"SDs: {sd_cov} of {len(names)} (about 1 in 10 is expected outside).",
         f"Overall respondent-level 90% interval coverage: {ind_cov.mean():.3f} "
         f"({ind_cov.size} respondent x coefficient pairs).",
-        f"Diagnostics: R-hat max {d.rhat_max:.3f}, ESS bulk min {d.ess_bulk_min:.0f}, "
-        f"divergences {d.divergences}.",
+        f"Diagnostics ({'targets met' if d.ok else 'targets NOT met'}; R-hat < 1.01, "
+        f"bulk ESS > 400, no divergences): R-hat max {d.rhat_max:.3f}, bulk ESS min "
+        f"{d.ess_bulk_min:.0f}, divergences {d.divergences}; correlations R-hat max "
+        f"{d.corr_rhat_max:.3f}, bulk ESS min {d.corr_ess_bulk_min:.0f}.",
         "",
     ]
     out = Path("validation/results/recovery_report.md")

@@ -1,102 +1,141 @@
 # partworth
 
-Hierarchical Bayes (HB) estimation for choice-based conjoint (CBC) studies in Python,
-built on [PyMC](https://www.pymc.io/). partworth is aimed at analysts who run CBC studies
-and want the whole workflow — data checks, HB estimation, respondent-level part-worths,
-Sawtooth-style output files, a market simulator and willingness to pay — in one Python
-package, with the validation results published alongside the code.
+partworth estimates hierarchical Bayes (HB) models for choice-based conjoint (CBC)
+studies in Python. It is built on [PyMC](https://www.pymc.io/).
 
-> **Status: pre-alpha.** The API is being built in the open. v0.1 is planned for the end
-> of November 2026 and v0.2 for the end of December 2026. Nothing here is stable yet.
+It covers the whole workflow in one package: data checks, HB estimation, respondent-level
+part-worths, Sawtooth-style output files, a market simulator and willingness to pay (WTP).
+The validation scripts and their results are in the repository.
 
-## What it does (planned for v0.1 / v0.2)
+> **Status: pre-alpha.** The API may change. It is not on PyPI yet.
 
-| | v0.1 | v0.2 |
-|---|---|---|
-| Long-format choice data with validation, ragged tasks, a none option | ✓ | |
-| Effects, dummy and linear coding; sign-constrained price | ✓ | |
-| Hierarchical MNL: full covariance (LKJ), non-centred, respondent covariates, nutpie sampler | ✓ | |
-| Part-worths, zero-centred diffs, importances, RLH, convergence diagnostics | ✓ | |
-| Sawtooth-style utilities CSV (read and write) | ✓ | |
-| Market simulator with posterior intervals, price curves, WTP | | ✓ |
-| Validation report against R `bayesm` on public data, recovery tests, SBC | | ✓ |
+## Why partworth
 
-Out of scope: experimental design (use [ChoiceDesign](https://choicedesign.readthedocs.io/)),
-latent class, MaxDiff, ACBC.
+- Sawtooth CBC/HB is commercial and runs outside Python. partworth gives the same kind of
+  outputs (raw utilities, zero-centred diffs, importances, RLH) in an open Python package.
+- pymc-marketing's `MixedLogit` is a general choice model. partworth is built for CBC
+  studies: long-format survey data, correlated random coefficients, a negative price
+  coefficient for every respondent, and a simulator with credible intervals.
+- Each result can be checked. The repository compares partworth with R `bayesm` on public
+  data and tests that it recovers known parameters.
+
+## What works now
+
+- Long-format choice data with checks, tasks of different sizes and a none option
+- Import of wide designs, such as the output of [ChoiceDesign](https://choicedesign.readthedocs.io/)
+- Effects, dummy and linear coding, with an optional sign constraint (for price)
+- Hierarchical MNL with correlated coefficients (LKJ prior), respondent covariates and the
+  nutpie sampler
+- Part-worths, zero-centred diffs, importances, RLH and convergence diagnostics
+- Sawtooth-style utilities CSV (read and write)
+- Market simulator with credible intervals, price curves and WTP
+
+Planned: a first release on PyPI. Not planned: experimental design (use ChoiceDesign),
+latent class, MaxDiff and ACBC.
+
+## Installation
+
+partworth is not on PyPI yet. Install it from GitHub:
+
+```
+pip install "partworth[nutpie,datasets] @ git+https://github.com/kojikojikojikoji/partworth"
+```
+
+It needs Python 3.12 or later.
+
+On macOS 26 or later, PyTensor 3.3.3 or earlier can fail with
+`ld: library 'd64' not found`. Set `PYTENSOR_FLAGS=cxx=` to avoid it. The fix is merged in
+PyTensor ([pymc-devs/pytensor#2432](https://github.com/pymc-devs/pytensor/pull/2432)) but
+not yet released.
 
 ## Quick look
+
+This example uses simulated data, so you can paste it as it is.
 
 ```python
 import pandas as pd
 import partworth as pw
+from partworth.datasets import simulate_cbc
 
-# one row per respondent x task x alternative
-data = pw.ChoiceData.from_long(
-    df,
-    attributes={
-        "brand": pw.Categorical(["A", "B", "C"]),
-        "size": pw.Categorical(["S", "M", "L"]),
-        "price": pw.Linear(sign="negative"),   # lognormal: negative for everyone
-    },
-    none="is_none",                            # optional "no purchase" alternative
-    covariates=respondents,                    # optional, one row per respondent
+# 300 respondents, 12 tasks, 3 products + "none" per task.
+# mu: true population means of the coded coefficients (price on the log scale).
+data, truth = simulate_cbc(
+    300, 12, 3,
+    {"brand": ["A", "B", "C"], "size": ["S", "M", "L"], "price": [2.0, 2.5, 3.0, 3.5]},
+    price="price", mu=[0.4, -0.1, -0.3, 0.1, -0.5, -1.0], sd=0.6, seed=1,
 )
-data.describe()                                # level counts and choice rates
+print(data.describe())                       # how often each level was shown and chosen
 
-result = pw.HierarchicalMNL(data).fit(draws=1000, tune=2000, chains=4, random_seed=1)
-print(result.diagnostics().report())          # R-hat, ESS, divergences, what to try
+# more tuning and draws than the defaults: the SD of "none" mixes slowly (see the guide)
+result = pw.HierarchicalMNL(data).fit(draws=2000, tune=3000, chains=4, random_seed=1)
+print(result.diagnostics().report())         # R-hat, ESS, divergences, what to try
 
-result.part_worths()                           # raw utilities, one column per level
-result.part_worths("zc_diffs")                 # zero-centred diffs
+result.part_worths()                         # raw utilities, one column per level
+result.part_worths("zc_diffs")               # zero-centred diffs
 result.importances()
 result.to_sawtooth_csv("utilities.csv")
 
-sim = pw.MarketSimulator(result)
 scenario = pd.DataFrame({"product": ["Ours", "Theirs"], "brand": ["A", "B"],
                          "size": ["M", "M"], "price": [3.0, 2.5]})
-sim.shares(scenario)                           # shares with 90% credible intervals
-sim.price_curve(scenario, product="Ours", grid=[2.0, 2.5, 3.0, 3.5])
-pw.wtp(result, attribute="size", from_level="S", to_level="L")
+sim = pw.MarketSimulator(result)
+print(sim.shares(scenario))                  # shares with 90% credible intervals
+print(sim.price_curve(scenario, product="Ours", grid=[2.0, 2.5, 3.0, 3.5]))
+print(pw.wtp(result, attribute="size", from_level="S", to_level="L"))
 ```
 
-A runnable example on public data is in `examples/camera.py`.
+For your own data, build `ChoiceData` from a long table (one row per respondent, task and
+alternative):
+
+```python
+data = pw.ChoiceData.from_long(
+    df,                                        # your table
+    attributes={"brand": pw.Categorical(["A", "B", "C"]),
+                "price": pw.Linear(sign="negative")},
+    none="is_none",                            # optional "no purchase" rows
+)
+```
+
+[examples/camera.py](examples/camera.py) runs the same steps on public data.
+[docs/guide.md](docs/guide.md) explains the choices you make along the way.
 
 ## Validation
 
-- Parameter recovery on simulated data (`validation/recovery.py`, report in
-  `validation/results/recovery_report.md`; the same checks run as tests with
-  `--run-slow`): respondent-level 90% intervals covered 88.7% of the true values
-  (300 respondents x 12 tasks), no divergences.
-- Comparison with R `bayesm::rhierMnlRwMixture` on the camera data
-  (`validation/compare_camera.py`, report in `validation/results/camera_report.md`).
-  With default priors (2026-10-12): respondent-level posterior means correlate at
-  0.997 or more for every coefficient, population means differ by at most 0.15 posterior
-  SDs, and hold-out hit rates are 0.726 (partworth) vs 0.730 (bayesm).
+Each script in [validation/](validation/) writes its report to
+[validation/results/](validation/results/).
 
-## Installation
-
-```
-pip install "partworth[nutpie,datasets]"
-```
-
-Requires Python 3.12+. On macOS 26 or later with PyTensor 3.3.3 or earlier, set
-`PYTENSOR_FLAGS=cxx=` if you see `ld: library 'd64' not found` (fixed upstream in
-pymc-devs/pytensor#2432, not yet released).
+- **Parameter recovery** ([recovery_report.md](validation/results/recovery_report.md)).
+  300 simulated respondents and 12 tasks. Respondent-level 90% intervals covered 88.7% of
+  the true values. 5 of 6 population means and 6 of 6 SDs were inside their 90%
+  intervals. The price mean (log scale) was just outside. The convergence targets were met.
+  Correlations reached R-hat 1.013 and ESS 399, just short of the targets.
+  `pytest --run-slow` runs the same fit and checks.
+- **Comparison with R bayesm** ([camera_report.md](validation/results/camera_report.md)).
+  `bayesm::rhierMnlRwMixture` on the public camera data. Respondent-level posterior means
+  correlate at 0.997 or more for every coefficient. The hold-out hit rate is 0.729 for
+  partworth and 0.730 for bayesm. Population means differ by up to 0.21 posterior SDs.
+  Our target was 0.1, so this target is not met. The two packages use different priors.
+- **Simulation-based calibration** ([sbc_report.md](validation/results/sbc_report.md)).
+  200 simulated data sets, 8 population parameters. The smallest uniformity p-value was
+  0.017. None was below 0.006, the threshold after correcting for 8 tests. Earlier runs
+  showed low p-values for different parameters each time. 15 of the 200 fits had a
+  population ESS below 99, which weakens the check.
+- **Performance** ([performance.md](validation/results/performance.md)). 300 respondents
+  took 74 s and 1,000 respondents took 290 s on one laptop.
 
 ## Data and licences
 
-partworth is Apache-2.0. The `camera` example data belongs to the R package
-[bayesm](https://cran.r-project.org/package=bayesm) (GPL); it is **downloaded from CRAN
-on first use** and is never bundled. bayesm code is not ported; comparisons run R in a
-separate process (`validation/`).
+partworth is licensed under Apache-2.0. The `camera` data belongs to the R package
+[bayesm](https://cran.r-project.org/package=bayesm), which is GPL. partworth downloads it
+from CRAN on first use and never includes it. No bayesm code is used. The comparison runs
+R in a separate process.
 
-All examples use public or simulated data only.
+All examples use public or simulated data.
 
 ## How this is built
 
-Design decisions are recorded in `docs/adr/`. Parts of the code are written with the help
-of an AI coding assistant; the model, priors and validation criteria are the author's
-decisions and are documented in the ADRs.
+Design decisions are in [docs/adr/](docs/adr/). Parts of the code were written with an AI
+coding assistant. The model, the priors and the validation targets are the author's
+decisions. The ADRs record them.
 
 ## Licence
 

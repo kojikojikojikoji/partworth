@@ -18,5 +18,8 @@ on the log scale (`HBResult.population()` labels them).
 
 ## Consequences
 
-The mean coefficient is `-exp(mu + tau^2 / 2)`, not `-exp(mu)`. WTP uses respondent
+`mu` and `tau` are on the log scale of the coefficient per standardised unit of the
+attribute, `(x - center) / scale`. The mean coefficient per standardised unit is
+`-exp(mu + tau^2 / 2)`, not `-exp(mu)`; divide by `scale` for the coefficient per
+original unit (what `HBResult.part_worths()` reports). WTP uses respondent
 draws and reports medians, because ratios with a lognormal denominator are heavy-tailed.

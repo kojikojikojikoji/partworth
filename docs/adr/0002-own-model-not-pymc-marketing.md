@@ -8,7 +8,7 @@
 pymc-marketing 1.2 ships `customer_choice.MixedLogit`. As of October 2026 it takes a wide
 table (one column per alternative), has diagonal random coefficients (no correlation, no
 LKJ prior), an intercept-only population mean, and no Sawtooth-style input/output or
-WTP. Its roadmap (pymc-labs/pymc-marketing#2627) is owned by PyMC Labs staff.
+WTP. Its roadmap is in pymc-labs/pymc-marketing#2627.
 
 ## Decision
 

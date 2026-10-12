@@ -86,7 +86,7 @@ def test_u25_save_load(data, make_result, tmp_path):
 
 def test_population_labels_log_scale(data, make_result):
     pop = make_result(data, BETA).population()
-    assert pop.loc[("mean", "price"), "scale"] == "log(-coef)"
+    assert pop.loc[("mean", "price"), "scale"] == "log(-coef per standardised unit)"
     assert pop.loc[("mean", "NONE"), "scale"] == "coef"
 
 

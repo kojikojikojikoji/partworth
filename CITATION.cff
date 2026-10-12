@@ -7,7 +7,6 @@ authors:
 license: Apache-2.0
 repository-code: "https://github.com/kojikojikojikoji/partworth"
 version: 0.0.1.dev0
-date-released: "2026-10-13"
 keywords:
   - conjoint analysis
   - discrete choice

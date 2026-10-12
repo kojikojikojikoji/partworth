@@ -74,7 +74,7 @@ class Diagnostics:
         if self.rhat_max >= RHAT_MAX or self.ess_bulk_min <= ESS_MIN:
             hints.append("- low ESS / high R-hat: run more draws and tune steps; check that "
                          "every level was shown often enough (ChoiceData.describe())")
-            hints.append("- many sparse levels: try covariance='diagonal' first")
+            hints.append("- many sparse levels: try priors=pw.Priors(covariance='diagonal')")
         if not self.corr_ok:
             hints.append("- correlations have not reached the targets: part-worths, shares "
                          "and WTP are unaffected, but rerun with more draws (e.g. 3000) "
@@ -129,9 +129,9 @@ class HBResult:
     def rlh(self) -> pd.Series:
         """Root likelihood per respondent (posterior-mean betas, estimation tasks)."""
         p = self._chosen_prob(self.beta_mean())
-        logp = np.where(self.data.task_mask, np.log(p), 0.0)
         n_tasks = self.data.task_mask.sum(axis=1)
         with np.errstate(invalid="ignore", divide="ignore"):
+            logp = np.where(self.data.task_mask, np.log(p), 0.0)
             # NaN for respondents with no estimation task (all tasks held out)
             out = np.where(n_tasks > 0, np.exp(logp.sum(axis=1) / n_tasks), np.nan)
         return pd.Series(out, index=self.data.respondents, name="RLH")
@@ -139,8 +139,10 @@ class HBResult:
     def population(self) -> pd.DataFrame:
         """Posterior summary of the population mean and standard deviation per coefficient.
 
-        For sign-constrained terms (e.g. price) these refer to the log scale shown in the
-        ``scale`` column: the coefficient is ``-exp(x)`` with ``x`` normal.
+        Values are in the coded space used for estimation. For linear attributes that is
+        per unit of ``(x - center) / scale`` (see ``ChoiceData.codebook``), not per original
+        unit. For sign-constrained terms (e.g. price) they also refer to the log scale
+        shown in the ``scale`` column: the coefficient is ``-exp(z)`` with ``z`` normal.
         """
         post = self.idata["posterior"]
         delta = post["Delta"].isel(covariate=0)
@@ -156,10 +158,14 @@ class HBResult:
         out = pd.concat(rows, names=["parameter", "coef"])
         signs = self.data.codebook.sign_constraints()
         out["scale"] = "coef"
+        for name in self.data.codebook.attributes:
+            if isinstance(self.data.codebook.spec(name), Linear):
+                out.loc[(slice(None), name), "scale"] = "coef per standardised unit"
         for col, sign in signs.items():
             name = self.data.coef_names[col]
             out.loc[(slice(None), name), "scale"] = (
-                "log(-coef)" if sign == "negative" else "log(coef)")
+                "log(-coef per standardised unit)" if sign == "negative"
+                else "log(coef per standardised unit)")
         return out
 
     def to_sawtooth_csv(self, path, kind: str = "raw") -> None:
@@ -184,7 +190,7 @@ class HBResult:
         Pass the hold-out half of :meth:`ChoiceData.holdout` to score hold-out tasks.
         """
         data = self.data if data is None else data
-        if tuple(data.coef_names) != tuple(self.data.coef_names):
+        if data.codebook != self.data.codebook:
             raise SchemaError("data was coded differently from the estimation data; "
                               "build it with codebook=result.data.codebook")
         pos = self.data.respondents.get_indexer(data.respondents)
@@ -256,8 +262,8 @@ class HBResult:
         return np.take_along_axis(prob, d.y[..., None], axis=2)[..., 0]
 
     def _linear_span(self, name: str) -> float:
-        vals = pd.to_numeric(self.data.long.loc[~self.data.long["none"], name])
-        return float(vals.max() - vals.min())
+        lo, hi = self.data.codebook.linear_span(name)
+        return hi - lo
 
     def _ranges(self, levels: pd.DataFrame) -> pd.DataFrame:
         cb = self.data.codebook
@@ -277,11 +283,15 @@ class HBResult:
         ranges = self._ranges(levels)
         factor = 100.0 * len(cb.attributes) / ranges.sum(axis=1)
         out = levels.copy()
+        shift = np.zeros(len(levels))
         for name in cb.attributes:
             if isinstance(cb.spec(name), Categorical):
                 block = levels[name]
-                out[name] = block.sub(block.mean(axis=1), axis=0).to_numpy()
-        out = out.mul(factor, axis=0)
+                means = block.mean(axis=1)
+                out[name] = block.sub(means, axis=0).to_numpy()
+                shift += means.to_numpy()
         if cb.has_none:
-            out[(NONE_COLUMN, NONE_COLUMN)] = levels[(NONE_COLUMN, NONE_COLUMN)] * factor
-        return out
+            # centring lowers every product's utility by `shift`; move NONE with it so
+            # product-versus-none comparisons are unchanged
+            out[(NONE_COLUMN, NONE_COLUMN)] = levels[(NONE_COLUMN, NONE_COLUMN)] - shift
+        return out.mul(factor, axis=0)

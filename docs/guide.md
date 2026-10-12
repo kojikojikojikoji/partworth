@@ -1,8 +1,7 @@
 # partworth user guide
 
-This guide covers the decisions an analyst makes between "I have CBC responses" and
-"I have shares and WTP I can defend". Each section says what partworth does by default
-and when to change it.
+This guide covers the choices you make on the way from CBC responses to shares and WTP.
+Each section says what partworth does by default. It also says when to change it.
 
 ## 1. Preparing the data
 
@@ -38,7 +37,7 @@ almost never chosen, is the most common cause of poor convergence.
 
 - **Categorical, effects coding (default).** Levels of an attribute sum to zero, so
   every level has an estimate and the attribute's mean utility is zero. This is the usual
-  choice for reporting and matches Sawtooth's raw utilities.
+  choice for reporting. It follows Sawtooth's documented definition of raw utilities.
 - **Categorical, dummy coding.** One reference level is fixed at zero. Use it when a
   natural baseline exists (feature absent / present) or to match another tool.
 - **Linear.** One coefficient per unit, for numeric attributes such as price. partworth
@@ -59,11 +58,13 @@ between-respondent SDs HalfNormal(1), LKJ(2) on correlations, full covariance.
 
 - These are weakly informative on the logit scale. A prior predictive check shows what
   they imply: `HierarchicalMNL(data).prior_predictive()`.
-- With many attributes and few tasks per respondent, try `covariance="diagonal"`: it has
-  far fewer parameters and is often enough for simulation.
-- Results are not sensitive to these choices on typical CBC data (see
-  `validation/results/camera_report.md`, where a much wider setting changed population
-  means by under one posterior SD and left respondent-level estimates almost unchanged).
+- With many attributes and few tasks per respondent, try
+  `HierarchicalMNL(data, priors=pw.Priors(covariance="diagonal"))`. It has far fewer
+  parameters and is often enough for simulation.
+- On the camera data, a much wider setting moved population means by up to 0.92 posterior
+  SDs. Respondent-level estimates hardly changed (correlation 0.998). See
+  [camera_report.md](../validation/results/camera_report.md). We have checked this on one
+  data set only.
 
 ## 4. Estimation and convergence
 
@@ -76,7 +77,7 @@ partworth warns if R-hat >= 1.01, bulk ESS <= 400 or any divergence occurs, and 
 lists what to try. In order:
 
 1. **Divergences:** `fit(target_accept=0.95)` (up to 0.99). If they persist, tighten
-   `tau_sd` (e.g. 0.5) or switch to `covariance="diagonal"`.
+   `tau_sd` (e.g. 0.5) or switch to `pw.Priors(covariance="diagonal")`.
 2. **Low ESS / high R-hat:** more draws and tuning (2000/2000). Correlations are usually
    the slowest parameters; respondent-level part-worths converge first.
 3. **Sparse levels:** merge levels that were rarely shown or chosen, or drop them.
@@ -85,8 +86,20 @@ Correlations between coefficients mix more slowly than everything else. They are
 reported on their own line (`corr_rhat_max`, `corr_ess_bulk_min`) and do not trigger the
 warning, because part-worths, shares and WTP do not depend on them directly. Before you
 report correlations, rerun with more draws (e.g. `draws=3000`) until that line also meets
-the targets. In our 300-respondent benchmark the default run gave correlation ESS of
-about 220 while all other parameters exceeded 400.
+the targets. In [recovery_report.md](../validation/results/recovery_report.md)
+(300 respondents, default settings), correlations reached a bulk ESS of 399. All other
+parameters were above 1,000.
+
+With a none option, the between-respondent SD of `NONE` often mixes most slowly. It
+moves together with the price SD, because both change how often a respondent buys at
+all. In our tests it needed `tune=3000, draws=2000` where other parameters were fine with
+the defaults. The `worst variable` line of the report shows when this happens. We also
+tried a version of the model that puts SDs and correlations in separate priors. It
+mixed faster but gave divergences, so we did not adopt it.
+
+Very small data sets (a few dozen respondents, few tasks) often do not converge. The data
+do not hold enough information to separate the respondents. Use
+`pw.Priors(covariance="diagonal")` and a tighter `tau_sd`, or collect more tasks.
 
 ## 5. Outputs
 
@@ -109,8 +122,8 @@ sim.price_curve(scenario, product="Ours", grid=[2.0, 2.5, 3.0])
 pw.wtp(result, attribute="size", from_level="S", to_level="L")
 ```
 
-- Intervals come from the posterior draws, so they show estimation uncertainty; they do
-  not include uncertainty about how the market differs from the survey.
+- Intervals come from the posterior draws. They show estimation uncertainty only. They do
+  not show how the market may differ from the survey.
 - The logit rule has the IIA property within a respondent: adding a near-copy of a product
   takes share proportionally from all others. Heterogeneity across respondents softens
   this. `rule="first_choice"` avoids it but exaggerates differences.

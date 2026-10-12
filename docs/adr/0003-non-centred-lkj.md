@@ -11,14 +11,14 @@ covariates centred.
 
 ## Reasons
 
-- CBC data give each respondent 8-20 tasks, so individual likelihoods are weak and the
-  centred parameterisation produces funnels and divergences under NUTS
-  (Betancourt and Girolami 2015). The non-centred form samples cleanly.
-- The LKJ prior separates scale (tau) from correlation, so each can be given a weakly
-  informative prior. eta = 2 mildly favours small correlations; `lkj_eta=1` is uniform.
+- CBC data give each respondent 8-20 tasks. Each respondent's likelihood is weak. The
+  centred form then causes funnels and divergences under NUTS (Betancourt and Girolami
+  2015). The non-centred form samples well.
+- The LKJ prior keeps scale (tau) and correlation apart. Each gets its own weakly
+  informative prior. eta = 2 slightly favours small correlations. `lkj_eta=1` is uniform.
 - Priors are on the logit scale of coded variables. With effects coding and linear terms
   standardised, a N(0, 2) mean prior keeps prior choice shares away from 0/1.
 - bayesm's inverse-Wishart prior is not reproduced; validation compares results under a
   "bayesm-like" setting (wide mean prior, lkj_eta = 1) and reports the difference.
 
-`covariance="diagonal"` is offered for studies with many sparse levels.
+`Priors(covariance="diagonal")` is offered for studies with many sparse levels.

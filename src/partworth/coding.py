@@ -83,6 +83,7 @@ class _Fitted:
     columns: tuple[str, ...]
     center: float = 0.0
     scale: float = 1.0
+    span: tuple[float, float] = (0.0, 0.0)   # min and max shown (linear terms)
 
 
 class Codebook:
@@ -117,7 +118,8 @@ class Codebook:
                 if scale is None:
                     sd = float(values.std(ddof=0))
                     scale = sd if sd > 0 else 1.0
-                fitted.append(_Fitted(name, spec, (name,), center, float(scale)))
+                fitted.append(_Fitted(name, spec, (name,), center, float(scale),
+                                      (float(values.min()), float(values.max()))))
             else:
                 raise SchemaError(f"attribute {name!r}: expected Categorical or Linear")
         return cls(fitted, has_none)
@@ -128,6 +130,17 @@ class Codebook:
 
     def spec(self, name: str) -> AttributeSpec:
         return self._get(name).spec
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Codebook):
+            return NotImplemented
+        return self._fitted == other._fitted and self.has_none == other.has_none
+
+    __hash__ = None  # type: ignore[assignment]
+
+    def linear_span(self, name: str) -> tuple[float, float]:
+        """Minimum and maximum of a linear attribute in the data the codebook was fitted on."""
+        return self._get(name).span
 
     def sign_constraints(self) -> dict[int, str]:
         """Column index -> ``"negative"``/``"positive"`` for sign-constrained terms."""
@@ -171,6 +184,11 @@ class Codebook:
         ``coef`` has shape ``(..., K)``. The result has one row per leading index and a
         two-level column index ``(attribute, level)``. Linear attributes are reported
         per original unit (the coefficient divided by ``scale``) under level ``"slope"``.
+
+        ``NONE`` is shifted so that a product's utility can be computed from the output
+        alone as ``sum of its level values + slope * x`` (with ``x`` in original units) and
+        compared with ``NONE``. During estimation linear terms are centred, so the raw
+        ``NONE`` coefficient is relative to a product at the centre value.
         """
         coef = np.asarray(coef, dtype=float)
         if coef.shape[-1] != len(self.columns):
@@ -187,7 +205,11 @@ class Codebook:
             else:
                 out[(f.name, "slope")] = block[:, 0] / f.scale
         if self.has_none:
-            out[(NONE_COLUMN, NONE_COLUMN)] = flat[:, self.columns.index(NONE_COLUMN)]
+            none = flat[:, self.columns.index(NONE_COLUMN)].copy()
+            for f in self._fitted:
+                if isinstance(f.spec, Linear):
+                    none += flat[:, self.columns.index(f.columns[0])] / f.scale * f.center
+            out[(NONE_COLUMN, NONE_COLUMN)] = none
         frame = pd.DataFrame(out)
         frame.columns = pd.MultiIndex.from_tuples(frame.columns, names=["attribute", "level"])
         return frame

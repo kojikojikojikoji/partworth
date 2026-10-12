@@ -35,7 +35,9 @@ def wide_design_to_long(
         One row per choice situation.
     pattern
         How attribute columns are named, with ``{alt}`` (alternative label) and
-        ``{attr}`` (attribute name) placeholders.
+        ``{attr}`` (attribute name) placeholders. Integer labels become the alternative
+        numbers (``alt2_price`` is alternative 2 wherever the column sits); other labels
+        are numbered 1.. in sorted order.
     task, block
         Column names for the choice situation and (optional) block. If ``task`` is not a
         column, situations are numbered 1..n in row order.
@@ -57,7 +59,11 @@ def wide_design_to_long(
     matched = {c: m for c, m in matched.items() if m}
     if not matched:
         raise SchemaError(f"no column matches the pattern {pattern!r}")
-    alts = list(dict.fromkeys(m["alt"] for m in matched.values()))
+    labels = list(dict.fromkeys(m["alt"] for m in matched.values()))
+    numeric = all(isinstance(_as_int(a), int) for a in labels)
+    # alternative numbers follow the labels (alt1 -> 1), not the column order
+    alts = sorted(labels, key=_as_int) if numeric else sorted(labels)
+    alt_numbers = [_as_int(a) for a in alts] if numeric else list(range(1, len(alts) + 1))
     attrs = list(dict.fromkeys(m["attr"] for m in matched.values()))
     lookup = {(m["alt"], m["attr"]): c for c, m in matched.items()}
     missing = [(a, b) for a in alts for b in attrs if (a, b) not in lookup]
@@ -68,7 +74,7 @@ def wide_design_to_long(
                 else np.arange(1, len(design) + 1))
     task_ids = [int(t) if float(t).is_integer() else t for t in task_ids]
     frames = []
-    for j, alt in enumerate(alts, start=1):
+    for j, alt in zip(alt_numbers, alts, strict=True):
         part = pd.DataFrame({"task": task_ids, "alternative": j})
         if block is not None and block in design.columns:
             part["block"] = design[block].to_numpy()
@@ -78,7 +84,7 @@ def wide_design_to_long(
         frames.append(part)
     if none:
         part = frames[0][["task"] + (["block"] if "block" in frames[0] else [])].copy()
-        part["alternative"] = len(alts) + 1
+        part["alternative"] = max(alt_numbers) + 1
         part["none"] = True
         frames.append(part)
     long = pd.concat(frames, ignore_index=True)

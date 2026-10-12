@@ -1,4 +1,8 @@
-"""Parameter recovery on simulated data (S-01 to S-05). Run with --run-slow."""
+"""Parameter recovery on simulated data (S-01 to S-05). Run with --run-slow.
+
+The main fixture uses the same data and settings as validation/recovery.py, whose
+report is published in validation/results/recovery_report.md.
+"""
 
 import warnings
 
@@ -20,7 +24,7 @@ def fitted():
         price="price", mu=MU, sd=0.6, corr=0.3, seed=11)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", pw.ConvergenceWarning)
-        res = pw.HierarchicalMNL(data).fit(draws=1000, tune=1000, chains=4, random_seed=3)
+        res = pw.HierarchicalMNL(data).fit(chains=4, random_seed=3)  # defaults, as recovery.py
     return data, truth, res
 
 
@@ -61,8 +65,7 @@ def test_s04b_individual_interval_coverage(fitted):
 def test_s05_convergence(fitted):
     _, _, res = fitted
     d = res.diagnostics()
-    assert d.divergences == 0
-    assert d.rhat_max < 1.02, d.report()
+    assert d.ok, d.report()  # R-hat < 1.01, bulk ESS > 400, no divergences
 
 
 def test_s05b_low_heterogeneity_converges():

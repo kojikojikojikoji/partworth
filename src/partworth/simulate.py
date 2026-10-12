@@ -84,9 +84,11 @@ class MarketSimulator:
         X, names = self._design(scenario, include_none)
         w = None
         if weights is not None:
-            w = weights.reindex(self.result.data.respondents).to_numpy()
+            w = weights.reindex(self.result.data.respondents).to_numpy(dtype=float)
             if np.isnan(w).any():
                 raise SchemaError("weights are missing for some respondents")
+            if (w < 0).any() or w.sum() <= 0:
+                raise SchemaError("weights must be non-negative with a positive sum")
         s = self._shares_by_draw(X, w)
         lo, hi = (1 - interval) / 2, 1 - (1 - interval) / 2
         return pd.DataFrame({

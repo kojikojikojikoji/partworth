@@ -89,6 +89,7 @@ def test_full_covariance_matches_cholesky():
     pt["eta"] = rng.normal(size=pt["eta"].shape)
     pt["chol_cov_cholesky-cov-packed__"] = rng.normal(scale=0.5, size=pt[
         "chol_cov_cholesky-cov-packed__"].shape)
-    fn = m.compile_fn([m["beta_raw"], m["cov"]], inputs=m.value_vars, on_unused_input="ignore")
+    outs = m.replace_rvs_by_values([m["beta_raw"], m["cov"]])
+    fn = m.compile_fn(outs, inputs=m.value_vars, on_unused_input="ignore")
     raw, cov = fn(pt)
     np.testing.assert_allclose(np.cov(raw.T), cov, atol=0.15 * np.abs(cov).max())

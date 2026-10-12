@@ -54,6 +54,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="validation/results")
     ap.add_argument("--draws", type=int, default=1000)
+    ap.add_argument("--tune", type=int, default=2000)
     ap.add_argument("--bayesm-R", type=int, default=20000)
     ap.add_argument("--seed", type=int, default=20261012)
     args = ap.parse_args()
@@ -80,7 +81,7 @@ def main() -> None:
     for label, priors in settings.items():
         t0 = time.time()
         res = pw.HierarchicalMNL(train, priors=priors).fit(
-            draws=args.draws, tune=args.draws, chains=4, random_seed=args.seed)
+            draws=args.draws, tune=args.tune, chains=4, random_seed=args.seed)
         elapsed = time.time() - t0
         names = list(data.coef_names)
         delta = res.idata["posterior"]["Delta"].isel(covariate=0)
@@ -124,13 +125,14 @@ def write_report(path: Path, results: dict, t_bayesm: float, args) -> None:
         f"Run {dt.date.today().isoformat()} with partworth {pw.__version__} and {version}.",
         f"Estimation tasks 1-14, hold-out tasks {HOLDOUT}. bayesm: R={args.bayesm_R}, "
         f"keep=10, first half discarded ({t_bayesm:.0f}s). partworth: 4 chains x "
-        f"{args.draws} draws after {args.draws} tuning steps (nutpie).",
+        f"{args.draws} draws after {args.tune} tuning steps (nutpie).",
         "",
-        "The algorithms differ (bayesm: random-walk Metropolis within Gibbs, inverse-Wishart "
-        "prior on the covariance; partworth: NUTS, LKJ prior). Agreement is a check that "
-        "the model is implemented correctly, not a claim that the two are identical. "
-        "The second setting widens partworth's priors; it does not reproduce bayesm's "
-        "inverse-Wishart prior, so larger differences there show prior sensitivity.",
+        "The two packages use different algorithms and priors. bayesm uses random-walk "
+        "Metropolis within Gibbs and an inverse-Wishart prior on the covariance. "
+        "partworth uses NUTS and an LKJ prior. We use the comparison to check that the "
+        "model is implemented correctly. The second setting widens partworth's priors. "
+        "It does not copy bayesm's prior, so its larger differences show how much the "
+        "priors matter.",
         "",
     ]
     for label, r in results.items():

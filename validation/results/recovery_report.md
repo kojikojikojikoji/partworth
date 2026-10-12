@@ -13,5 +13,6 @@ Price's population mean and SD are on the log scale (see ADR-0004).
 | price | 0.30 | [0.13, 0.29] | False | 0.60 | [0.57, 0.74] | True | 0.790 | 0.890 |
 | NONE | -0.50 | [-0.75, -0.49] | True | 0.60 | [0.47, 0.80] | True | 0.546 | 0.880 |
 
+Population means inside their 90% interval: 5 of 6; SDs: 6 of 6 (about 1 in 10 is expected outside).
 Overall respondent-level 90% interval coverage: 0.887 (1800 respondent x coefficient pairs).
-Diagnostics: R-hat max 1.013, ESS bulk min 399, divergences 0.
+Diagnostics (targets met; R-hat < 1.01, bulk ESS > 400, no divergences): R-hat max 1.006, bulk ESS min 1094, divergences 0; correlations R-hat max 1.013, bulk ESS min 399.
