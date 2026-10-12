@@ -1,7 +1,7 @@
 # partworth vs bayesm on the camera data
 
-Run 2026-10-12 with partworth 0.0.1.dev0 and bayesm 3.1.7.
-Estimation tasks 1-14, hold-out tasks [15, 16]. bayesm: R=20000, keep=10, first half discarded (33s). partworth: 4 chains x 1000 draws after 1000 tuning steps (nutpie).
+Run 2026-10-13 with partworth 0.0.1.dev0 and bayesm 3.1.7.
+Estimation tasks 1-14, hold-out tasks [15, 16]. bayesm: R=20000, keep=10, first half discarded (32s). partworth: 4 chains x 1000 draws after 1000 tuning steps (nutpie).
 
 The algorithms differ (bayesm: random-walk Metropolis within Gibbs, inverse-Wishart prior on the covariance; partworth: NUTS, LKJ prior). Agreement is a check that the model is implemented correctly, not a claim that the two are identical. The second setting widens partworth's priors; it does not reproduce bayesm's inverse-Wishart prior, so larger differences there show prior sensitivity.
 
@@ -10,7 +10,7 @@ The algorithms differ (bayesm: random-walk Metropolis within Gibbs, inverse-Wish
 - max |difference in population means| / bayesm posterior sd: 0.15 (target 0.1; reported, not enforced: the priors differ)
 - min correlation of respondent posterior means: 0.997 (target 0.9)
 - hold-out hit rate: partworth 0.726, bayesm 0.730 (target difference within 0.02)
-- partworth time 54s; diagnostics: R-hat max 1.018, ESS bulk min 307, divergences 0
+- partworth time 49s; diagnostics: R-hat max 1.006, ESS bulk min 923, divergences 0
 
 |           |   partworth_mean |   partworth_sd |   bayesm_mean |   bayesm_sd |   diff_in_sd |   respondent_corr |
 |:----------|-----------------:|---------------:|--------------:|------------:|-------------:|------------------:|
@@ -30,7 +30,7 @@ The algorithms differ (bayesm: random-walk Metropolis within Gibbs, inverse-Wish
 - max |difference in population means| / bayesm posterior sd: 0.88 (target 0.1; reported, not enforced: the priors differ)
 - min correlation of respondent posterior means: 0.997 (target 0.9)
 - hold-out hit rate: partworth 0.724, bayesm 0.730 (target difference within 0.02)
-- partworth time 58s; diagnostics: R-hat max 1.011, ESS bulk min 229, divergences 0
+- partworth time 49s; diagnostics: R-hat max 1.006, ESS bulk min 700, divergences 0
 
 |           |   partworth_mean |   partworth_sd |   bayesm_mean |   bayesm_sd |   diff_in_sd |   respondent_corr |
 |:----------|-----------------:|---------------:|--------------:|------------:|-------------:|------------------:|
