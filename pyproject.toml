@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "partworth"
+version = "0.0.1.dev0"
+description = "Hierarchical Bayes choice-based conjoint analysis in Python, with Sawtooth-style outputs and a market simulator"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Koji Miyazawa" }]
+requires-python = ">=3.12"
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "xarray>=2024.10",
+  "pymc>=6.3,<7",
+  "arviz>=1.3,<2",
+]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Mathematics",
+]
+keywords = ["conjoint", "choice-based conjoint", "hierarchical bayes", "discrete choice", "pymc", "market research"]
+
+[project.optional-dependencies]
+nutpie = ["nutpie>=0.16"]
+datasets = ["rdata>=0.11"]
+pmm = ["pymc-marketing>=1.2"]
+dev = ["pytest>=8", "ruff>=0.6", "rdata>=0.11"]
+
+[project.urls]
+Homepage = "https://github.com/kojikojikojikoji/partworth"
+Issues = "https://github.com/kojikojikojikoji/partworth/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/partworth"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "network: needs internet access (skipped unless --run-network)",
+  "slow: runs MCMC; nightly only (skipped unless --run-slow)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "NPY"]
