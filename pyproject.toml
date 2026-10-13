@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "partworth"
-version = "0.0.1.dev0"
+version = "0.0.1"
 description = "Hierarchical Bayes choice-based conjoint analysis in Python, with Sawtooth-style outputs and a market simulator"
 readme = "README.md"
 license = "Apache-2.0"
@@ -43,6 +43,10 @@ Issues = "https://github.com/kojikojikojikoji/partworth/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/partworth"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "docs", "examples", "validation", "README.md", "LICENSE",
+           "CHANGELOG.md", "CITATION.cff", "CONTRIBUTING.md", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

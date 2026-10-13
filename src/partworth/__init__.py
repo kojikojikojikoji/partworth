@@ -7,7 +7,7 @@ from .models import HierarchicalMNL, Priors
 from .results import Diagnostics, HBResult
 from .simulate import MarketSimulator, wtp
 
-__version__ = "0.0.1.dev0"
+__version__ = "0.0.1"
 
 __all__ = [
     "Categorical",

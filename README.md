@@ -7,7 +7,7 @@ It covers the whole workflow in one package: data checks, HB estimation, respond
 part-worths, Sawtooth-style output files, a market simulator and willingness to pay (WTP).
 The validation scripts and their results are in the repository.
 
-> **Status: pre-alpha.** The API may change. It is not on PyPI yet.
+> **Status: pre-alpha.** The API may change.
 
 ## What you can do with it
 
@@ -64,16 +64,16 @@ Step 4 uses all posterior draws, so every share, price curve and WTP comes with 
 - Sawtooth-style utilities CSV (read and write)
 - Market simulator with credible intervals, price curves and WTP
 
-Planned: a first release on PyPI. Not planned: experimental design (use ChoiceDesign),
+Not planned: experimental design (use ChoiceDesign),
 latent class, MaxDiff and ACBC.
 
 ## Installation
 
-partworth is not on PyPI yet. Install it from GitHub:
+```
+pip install "partworth[nutpie,datasets]"
+```
 
-```
-pip install "partworth[nutpie,datasets] @ git+https://github.com/kojikojikojikoji/partworth"
-```
+`nutpie` adds the faster sampler. `datasets` adds the reader for the public camera data.
 
 It needs Python 3.12 or later.
 
@@ -129,34 +129,34 @@ data = pw.ChoiceData.from_long(
 )
 ```
 
-[examples/retail_survey.ipynb](examples/retail_survey.ipynb) is a notebook on a dummy retail
+[examples/retail_survey.ipynb](https://github.com/kojikojikojikoji/partworth/blob/main/examples/retail_survey.ipynb) is a notebook on a dummy retail
 survey. It goes from the survey table to shares, prices and profit. A Japanese version is in
-[examples/retail_survey_ja.ipynb](examples/retail_survey_ja.ipynb).
-[examples/camera.py](examples/camera.py) runs the same steps on public data.
-[docs/guide.md](docs/guide.md) explains the choices you make along the way.
+[examples/retail_survey_ja.ipynb](https://github.com/kojikojikojikoji/partworth/blob/main/examples/retail_survey_ja.ipynb).
+[examples/camera.py](https://github.com/kojikojikojikoji/partworth/blob/main/examples/camera.py) runs the same steps on public data.
+[docs/guide.md](https://github.com/kojikojikojikoji/partworth/blob/main/docs/guide.md) explains the choices you make along the way.
 
 ## Validation
 
-Each script in [validation/](validation/) writes its report to
-[validation/results/](validation/results/).
+Each script in [validation/](https://github.com/kojikojikojikoji/partworth/tree/main/validation/) writes its report to
+[validation/results/](https://github.com/kojikojikojikoji/partworth/tree/main/validation/results/).
 
-- **Parameter recovery** ([recovery_report.md](validation/results/recovery_report.md)).
+- **Parameter recovery** ([recovery_report.md](https://github.com/kojikojikojikoji/partworth/blob/main/validation/results/recovery_report.md)).
   300 simulated respondents and 12 tasks. Respondent-level 90% intervals covered 88.7% of
   the true values. 5 of 6 population means and 6 of 6 SDs were inside their 90%
   intervals. The price mean (log scale) was just outside. The convergence targets were met.
   Correlations reached R-hat 1.013 and ESS 399, just short of the targets.
   `pytest --run-slow` runs the same fit and checks.
-- **Comparison with R bayesm** ([camera_report.md](validation/results/camera_report.md)).
+- **Comparison with R bayesm** ([camera_report.md](https://github.com/kojikojikojikoji/partworth/blob/main/validation/results/camera_report.md)).
   `bayesm::rhierMnlRwMixture` on the public camera data. Respondent-level posterior means
   correlate at 0.997 or more for every coefficient. The hold-out hit rate is 0.729 for
   partworth and 0.730 for bayesm. Population means differ by up to 0.21 posterior SDs.
   Our target was 0.1, so this target is not met. The two packages use different priors.
-- **Simulation-based calibration** ([sbc_report.md](validation/results/sbc_report.md)).
+- **Simulation-based calibration** ([sbc_report.md](https://github.com/kojikojikojikoji/partworth/blob/main/validation/results/sbc_report.md)).
   200 simulated data sets, 8 population parameters. The smallest uniformity p-value was
   0.017. None was below 0.006, the threshold after correcting for 8 tests. Earlier runs
   showed low p-values for different parameters each time. 15 of the 200 fits had a
   population ESS below 99, which weakens the check.
-- **Performance** ([performance.md](validation/results/performance.md)). 300 respondents
+- **Performance** ([performance.md](https://github.com/kojikojikojikoji/partworth/blob/main/validation/results/performance.md)). 300 respondents
   took 74 s and 1,000 respondents took 290 s on one laptop.
 
 ## Data and licences
@@ -170,10 +170,10 @@ All examples use public or simulated data.
 
 ## How this is built
 
-Design decisions are in [docs/adr/](docs/adr/). Parts of the code were written with an AI
+Design decisions are in [docs/adr/](https://github.com/kojikojikojikoji/partworth/tree/main/docs/adr/). Parts of the code were written with an AI
 coding assistant. The model, the priors and the validation targets are the author's
 decisions. The ADRs record them.
 
 ## Licence
 
-Apache License 2.0. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](https://github.com/kojikojikojikoji/partworth/blob/main/LICENSE).

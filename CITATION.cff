@@ -6,7 +6,7 @@ authors:
     given-names: Koji
 license: Apache-2.0
 repository-code: "https://github.com/kojikojikojikoji/partworth"
-version: 0.0.1.dev0
+version: 0.0.1
 keywords:
   - conjoint analysis
   - discrete choice

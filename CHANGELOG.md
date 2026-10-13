@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.0.1 (2026-10-14)
+
+First release on PyPI.
 
 - `ChoiceData.from_long`: validated long-format input, ragged tasks/alternatives, none
   option, respondent covariates, `subset`, `holdout`, `describe`
