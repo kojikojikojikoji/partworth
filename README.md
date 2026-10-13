@@ -129,6 +129,9 @@ data = pw.ChoiceData.from_long(
 )
 ```
 
+[examples/retail_survey.ipynb](examples/retail_survey.ipynb) is a notebook on a dummy retail
+survey. It goes from the survey table to shares, prices and profit. A Japanese version is in
+[examples/retail_survey_ja.ipynb](examples/retail_survey_ja.ipynb).
 [examples/camera.py](examples/camera.py) runs the same steps on public data.
 [docs/guide.md](docs/guide.md) explains the choices you make along the way.
 

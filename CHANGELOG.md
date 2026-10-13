@@ -13,3 +13,4 @@
   and `wtp`
 - `datasets.load_camera` (fetched from CRAN at run time) and `datasets.simulate_cbc`
 - Validation against R bayesm (`validation/`)
+- Example notebooks on a dummy retail survey, in English and Japanese (`examples/`)

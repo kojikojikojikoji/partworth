@@ -216,9 +216,12 @@ class HBResult:
         post = self.idata["posterior"]
         core = [v for v in ("Delta", "tau", "beta") if v in post.data_vars]
         names = core + (["corr"] if "corr" in post.data_vars else [])
-        rhat = az.rhat(self.idata, var_names=names)
-        ess_b = az.ess(self.idata, var_names=names, method="bulk")
-        ess_t = az.ess(self.idata, var_names=names, method="tail")
+        with warnings.catch_warnings():
+            # constant entries (the diagonal of corr) divide by zero inside ArviZ
+            warnings.simplefilter("ignore", RuntimeWarning)
+            rhat = az.rhat(self.idata, var_names=names)
+            ess_b = az.ess(self.idata, var_names=names, method="bulk")
+            ess_t = az.ess(self.idata, var_names=names, method="tail")
 
         def values(ds, v):
             arr = ds[v].to_numpy().astype(float)
