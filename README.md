@@ -12,34 +12,32 @@ The validation scripts and their results are in the repository.
 ## What you can do with it
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph S1["1. Your survey"]
+        direction LR
         A["CBC answers<br/>(long format)"]
         B["Design from ChoiceDesign<br/>(wide format)"]
+        A ~~~ B
     end
     subgraph S2["2. Fit one model"]
-        C["ChoiceData<br/>checks the data"]
-        D["HierarchicalMNL<br/>HB estimation on PyMC"]
-        E["Diagnostics<br/>R-hat, ESS, divergences"]
+        direction LR
+        C["ChoiceData<br/>checks the data"] --> D["HierarchicalMNL<br/>HB estimation on PyMC"] --> E["Diagnostics<br/>R-hat, ESS, divergences"]
     end
     subgraph S3["3. Read the results"]
+        direction LR
         F["Part-worths<br/>for each respondent"]
         G["Importances and RLH"]
         H["Sawtooth-style CSV"]
+        F ~~~ G ~~~ H
     end
     subgraph S4["4. Answer business questions"]
-        I["Which product wins?<br/>shares with credible intervals"]
-        J["What if we change the price?<br/>price curves"]
-        K["How much will people pay?<br/>WTP for a feature"]
+        direction LR
+        I["Which product wins?<br/>shares with<br/>credible intervals"]
+        J["What if we change<br/>the price?<br/>price curves"]
+        K["How much will<br/>people pay?<br/>WTP for a feature"]
+        I ~~~ J ~~~ K
     end
-    A --> C
-    B --> C
-    C --> D --> E --> F
-    F --> G
-    F --> H
-    F --> I
-    F --> J
-    F --> K
+    S1 --> S2 --> S3 --> S4
 ```
 
 Steps 1 to 3 replace the usual "estimate in one tool, export, simulate in a spreadsheet" work.
