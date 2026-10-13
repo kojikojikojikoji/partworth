@@ -9,6 +9,42 @@ The validation scripts and their results are in the repository.
 
 > **Status: pre-alpha.** The API may change. It is not on PyPI yet.
 
+## What you can do with it
+
+```mermaid
+flowchart LR
+    subgraph S1["1. Your survey"]
+        A["CBC answers<br/>(long format)"]
+        B["Design from ChoiceDesign<br/>(wide format)"]
+    end
+    subgraph S2["2. Fit one model"]
+        C["ChoiceData<br/>checks the data"]
+        D["HierarchicalMNL<br/>HB estimation on PyMC"]
+        E["Diagnostics<br/>R-hat, ESS, divergences"]
+    end
+    subgraph S3["3. Read the results"]
+        F["Part-worths<br/>for each respondent"]
+        G["Importances and RLH"]
+        H["Sawtooth-style CSV"]
+    end
+    subgraph S4["4. Answer business questions"]
+        I["Which product wins?<br/>shares with credible intervals"]
+        J["What if we change the price?<br/>price curves"]
+        K["How much will people pay?<br/>WTP for a feature"]
+    end
+    A --> C
+    B --> C
+    C --> D --> E --> F
+    F --> G
+    F --> H
+    F --> I
+    F --> J
+    F --> K
+```
+
+Steps 1 to 3 replace the usual "estimate in one tool, export, simulate in a spreadsheet" work.
+Step 4 uses all posterior draws, so every share, price curve and WTP comes with its uncertainty.
+
 ## Why partworth
 
 - Sawtooth CBC/HB is commercial and runs outside Python. partworth gives the same kind of
