@@ -74,6 +74,30 @@ class MarketSimulator:
         w = np.ones(p.shape[1]) if weights is None else np.asarray(weights, dtype=float)
         return np.einsum("snp,n->sp", p, w / w.sum())          # (S, P)
 
+    def _weights(self, weights: pd.Series | None) -> np.ndarray | None:
+        if weights is None:
+            return None
+        w = weights.reindex(self.result.data.respondents).to_numpy(dtype=float)
+        if np.isnan(w).any():
+            raise SchemaError("weights are missing for some respondents")
+        if (w < 0).any() or w.sum() <= 0:
+            raise SchemaError("weights must be non-negative with a positive sum")
+        return w
+
+    def share_draws(self, scenario: pd.DataFrame, *, include_none: bool = True,
+                    weights: pd.Series | None = None) -> pd.DataFrame:
+        """Shares of preference for each posterior draw the simulator uses and each product.
+
+        Rows are draws (at most ``max_draws``, thinned evenly) and columns are products.
+        Two scenarios simulated with the same simulator use the same draws in the same
+        order, so their difference can be taken row by row. Use this to compare
+        scenarios; the intervals from :meth:`shares` of two scenarios cannot be compared
+        by their overlap.
+        """
+        X, names = self._design(scenario, include_none)
+        s = self._shares_by_draw(X, self._weights(weights))
+        return pd.DataFrame(s, columns=names).rename_axis("draw")
+
     def shares(self, scenario: pd.DataFrame, *, include_none: bool = True,
                interval: float = 0.9, weights: pd.Series | None = None) -> pd.DataFrame:
         """Shares of preference for the products in ``scenario`` (one row per product).
@@ -81,21 +105,13 @@ class MarketSimulator:
         ``scenario`` has one column per attribute and optionally a ``product`` column.
         ``weights`` (indexed by respondent) reweights respondents.
         """
-        X, names = self._design(scenario, include_none)
-        w = None
-        if weights is not None:
-            w = weights.reindex(self.result.data.respondents).to_numpy(dtype=float)
-            if np.isnan(w).any():
-                raise SchemaError("weights are missing for some respondents")
-            if (w < 0).any() or w.sum() <= 0:
-                raise SchemaError("weights must be non-negative with a positive sum")
-        s = self._shares_by_draw(X, w)
+        s = self.share_draws(scenario, include_none=include_none, weights=weights)
         lo, hi = (1 - interval) / 2, 1 - (1 - interval) / 2
         return pd.DataFrame({
-            "product": names,
-            "share": s.mean(axis=0),
-            "lower": np.quantile(s, lo, axis=0),
-            "upper": np.quantile(s, hi, axis=0),
+            "product": list(s.columns),
+            "share": s.mean(axis=0).to_numpy(),
+            "lower": s.quantile(lo, axis=0).to_numpy(),
+            "upper": s.quantile(hi, axis=0).to_numpy(),
         })
 
     def price_curve(self, scenario: pd.DataFrame, *, product: int | str,

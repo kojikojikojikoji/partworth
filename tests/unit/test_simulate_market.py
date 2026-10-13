@@ -78,3 +78,38 @@ def test_scenario_errors(data, make_result):
         sim.shares(SCEN.drop(columns="price"))
     with pytest.raises(pw.CodingError):
         sim.shares(SCEN.assign(colour=["purple", "red"]))
+
+
+def test_share_draws_hand_computed_rows(data, make_result):
+    # two draws, both respondents alike: red=+1/-1, blue=-1/+1, price 0 at centre, none=0
+    beta = np.array([[[1.0, 0.0, -1.0, 0.0]] * 2, [[-1.0, 0.0, 1.0, 0.0]] * 2])
+    sim = pw.MarketSimulator(make_result(data, beta))
+    draws = sim.share_draws(SCEN)
+    e = np.exp([1.0, -1.0, 0.0])
+    assert list(draws.columns) == ["P", "Q", "NONE"]
+    np.testing.assert_allclose(draws.iloc[0], e / e.sum())
+    np.testing.assert_allclose(draws.iloc[1], (e / e.sum())[[1, 0, 2]])
+    without = sim.share_draws(SCEN, include_none=False)
+    assert list(without.columns) == ["P", "Q"]
+    np.testing.assert_allclose(without.iloc[0], e[:2] / e[:2].sum())
+
+
+def test_share_draws_rows_align_across_scenarios(data, make_result):
+    rng = np.random.default_rng(2)
+    sim = pw.MarketSimulator(make_result(data, rng.normal(size=(40, 2, 4))))
+    cheaper = SCEN.assign(price=[10, 20])
+    base, new = sim.share_draws(SCEN), sim.share_draws(cheaper)
+    pd.testing.assert_frame_equal(base, sim.share_draws(SCEN))
+    out = sim.shares(SCEN)
+    np.testing.assert_allclose(base.mean(axis=0), out["share"])
+    # the price coefficient differs by draw, so the gain of P differs by draw too
+    gain = new["P"] - base["P"]
+    assert gain.nunique() > 1
+
+
+def test_share_draws_weights(data, make_result):
+    beta = np.array([[[1.0, 0.0, -1.0, 0.0], [-1.0, 0.0, 1.0, 0.0]]])
+    sim = pw.MarketSimulator(make_result(data, beta))
+    first = pd.Series([1.0, 0.0], index=data.respondents)
+    e = np.exp([1.0, -1.0, 0.0])
+    np.testing.assert_allclose(sim.share_draws(SCEN, weights=first).iloc[0], e / e.sum())

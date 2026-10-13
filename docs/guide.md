@@ -119,9 +119,12 @@ do not hold enough information to separate the respondents. Use
 sim = pw.MarketSimulator(result)            # share of preference (logit)
 sim.shares(scenario)                         # share, lower, upper (90% credible interval)
 sim.price_curve(scenario, product="Ours", grid=[2.0, 2.5, 3.0])
+sim.share_draws(scenario)                    # shares for each posterior draw
 pw.wtp(result, attribute="size", from_level="S", to_level="L")
 ```
 
+- To compare two scenarios, take the difference of their `share_draws()` row by row. Both
+  use the same draws. Do not judge a difference from the overlap of two intervals.
 - Intervals come from the posterior draws. They show estimation uncertainty only. They do
   not show how the market may differ from the survey.
 - The logit rule has the IIA property within a respondent: adding a near-copy of a product
