@@ -137,7 +137,9 @@ data = pw.ChoiceData.from_long(
 survey. It goes from the survey table to shopper differences, prices, profit and a hold-out
 check ([open in Colab](https://colab.research.google.com/github/kojikojikojikoji/partworth/blob/main/examples/retail_survey.ipynb)). A Japanese version is in
 [examples/retail_survey_ja.ipynb](https://github.com/kojikojikojikoji/partworth/blob/main/examples/retail_survey_ja.ipynb).
-[examples/camera.py](https://github.com/kojikojikojikoji/partworth/blob/main/examples/camera.py) runs the same steps on public data.
+[examples/camera.ipynb](https://github.com/kojikojikojikoji/partworth/blob/main/examples/camera.ipynb) runs the main steps on public data from a
+published camera study ([Japanese](https://github.com/kojikojikojikoji/partworth/blob/main/examples/camera_ja.ipynb)).
+[examples/camera.py](https://github.com/kojikojikojikoji/partworth/blob/main/examples/camera.py) fits the same model on all 16 questions in a short script.
 [docs/guide.md](https://github.com/kojikojikojikoji/partworth/blob/main/docs/guide.md) explains the choices you make along the way.
 
 ## Validation

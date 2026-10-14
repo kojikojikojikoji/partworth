@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Example notebooks on the public camera data, in English and Japanese
+
 ## 0.0.1 (2026-10-14)
 
 First release on PyPI.
