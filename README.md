@@ -50,6 +50,10 @@ Step 4 uses all posterior draws, so every share, price curve and WTP comes with 
 - pymc-marketing's `MixedLogit` is a general choice model. partworth is built for CBC
   studies: long-format survey data, correlated random coefficients, a negative price
   coefficient for every respondent, and a simulator with credible intervals.
+- Answers come as chances. The simulator uses the same posterior draws (500 by default)
+  for every plan, so two plans can be compared draw by draw. You get answers such as "this
+  price gives the most profit in 94% of the draws". A spreadsheet simulator gives one share
+  per product.
 - Each result can be checked. The repository compares partworth with R `bayesm` on public
   data and tests that it recovers known parameters.
 
@@ -130,7 +134,8 @@ data = pw.ChoiceData.from_long(
 ```
 
 [examples/retail_survey.ipynb](https://github.com/kojikojikojikoji/partworth/blob/main/examples/retail_survey.ipynb) is a notebook on a dummy retail
-survey. It goes from the survey table to shares, prices and profit. A Japanese version is in
+survey. It goes from the survey table to shopper differences, prices, profit and a hold-out
+check ([open in Colab](https://colab.research.google.com/github/kojikojikojikoji/partworth/blob/main/examples/retail_survey.ipynb)). A Japanese version is in
 [examples/retail_survey_ja.ipynb](https://github.com/kojikojikojikoji/partworth/blob/main/examples/retail_survey_ja.ipynb).
 [examples/camera.py](https://github.com/kojikojikojikoji/partworth/blob/main/examples/camera.py) runs the same steps on public data.
 [docs/guide.md](https://github.com/kojikojikojikoji/partworth/blob/main/docs/guide.md) explains the choices you make along the way.
