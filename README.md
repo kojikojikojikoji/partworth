@@ -1,5 +1,9 @@
 # partworth
 
+[![PyPI](https://img.shields.io/pypi/v/partworth)](https://pypi.org/project/partworth/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kojikojikojikoji/partworth/blob/main/examples/retail_survey.ipynb)
+
 partworth estimates hierarchical Bayes (HB) models for choice-based conjoint (CBC)
 studies in Python. It is built on [PyMC](https://www.pymc.io/).
 
@@ -8,6 +12,11 @@ part-worths, Sawtooth-style output files, a market simulator and willingness to 
 The validation scripts and their results are in the repository.
 
 > **Status: pre-alpha.** The API may change.
+
+![Demand, profit and the best price for a store brand coffee](docs/images/price_profit.png)
+
+From [examples/retail_survey.ipynb](https://github.com/kojikojikojikoji/partworth/blob/main/examples/retail_survey.ipynb) (dummy data).
+Each thin line is one posterior draw. In 94% of the draws, 523 yen gives the most profit.
 
 ## What you can do with it
 
